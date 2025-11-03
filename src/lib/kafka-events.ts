@@ -27,7 +27,8 @@ export type EmailSentEvent = {
   timestamp: string;
 };
 
-// Union type for all events
+
+
 export type KafkaEvent = UserCreatedEvent | UserUpdatedEvent | EmailSentEvent;
 
 // Event topic mapping
@@ -48,7 +49,9 @@ export const emitUserCreated = async (event: Omit<UserCreatedEvent, 'type' | 'ti
     ...event,
     timestamp: new Date().toISOString(),
   });
-};
+}
+
+
 
 export const emitUserUpdated = async (event: Omit<UserUpdatedEvent, 'type' | 'timestamp'>): Promise<void> => {
   const { kafka } = await import('./kafka');
