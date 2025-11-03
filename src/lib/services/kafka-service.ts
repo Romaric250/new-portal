@@ -1,5 +1,5 @@
 /**
- * Example Kafka Service Implementation
+ * Example Kafka Service
  * This file demonstrates how to set up Kafka consumers for your application
  */
 
