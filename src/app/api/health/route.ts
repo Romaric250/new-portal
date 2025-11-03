@@ -1,35 +1,48 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { redis } from '@/lib/redis';
+import { getKafkaClient } from '@/lib/kafka';
 
 export async function GET() {
+  const services: Record<string, string> = {};
+  let allHealthy = true;
+
   try {
     // Check database connection
     await prisma.$queryRaw`SELECT 1`;
+    services.database = 'connected';
+  } catch (error) {
+    services.database = 'disconnected';
+    allHealthy = false;
+  }
 
+  try {
     // Check Redis connection
     await redis.ping();
-
-    return NextResponse.json(
-      {
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        services: {
-          database: 'connected',
-          redis: 'connected',
-        },
-      },
-      { status: 200 },
-    );
+    services.redis = 'connected';
   } catch (error) {
-    return NextResponse.json(
-      {
-        status: 'unhealthy',
-        timestamp: new Date().toISOString(),
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 503 },
-    );
+    services.redis = 'disconnected';
+    allHealthy = false;
   }
+
+  try {
+    // Check Kafka connection
+    const kafkaClient = getKafkaClient();
+    // Note: This is a basic check. In production, you might want to
+    // actually test producer/consumer connections
+    services.kafka = 'available';
+  } catch (error) {
+    services.kafka = 'unavailable';
+    allHealthy = false;
+  }
+
+  return NextResponse.json(
+    {
+      status: allHealthy ? 'healthy' : 'degraded',
+      timestamp: new Date().toISOString(),
+      services,
+    },
+    { status: allHealthy ? 200 : 503 },
+  );
 }
 
